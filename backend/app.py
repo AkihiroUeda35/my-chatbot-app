@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
@@ -6,11 +7,34 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from agent import ThreadMetadata, delete_thread, get_thread, get_thread_list, rename_thread, search, search_streaming
+from agent import (
+    ThreadMetadata,
+    delete_thread,
+    get_search_agent,
+    get_thread,
+    get_thread_list,
+    rename_thread,
+    search,
+    search_streaming,
+)
 from log_setting import getLogger, initialize
 
 logger = getLogger()
-app = FastAPI(title="Search Agent API")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan event handler for startup and shutdown."""
+    # Startup: Initialize the agent to avoid cold start delays
+    logger.info("Initializing search agent...")
+    get_search_agent()  # Pre-warm the agent cache
+    logger.info("Search agent initialized")
+    yield
+    # Shutdown: cleanup if needed
+    logger.info("Shutting down...")
+
+
+app = FastAPI(title="Search Agent API", lifespan=lifespan)
 
 # CORS configuration
 app.add_middleware(

@@ -16,7 +16,12 @@ export const CustomThreadList: FC<CustomThreadListProps> = ({
   currentThreadId, 
   onThreadSelect 
 }) => {
-  const { data, isLoading, refetch } = useApiGetThreadsApiThreadsGet();
+  const { data, isLoading, refetch } = useApiGetThreadsApiThreadsGet({
+    query: {
+      staleTime: 30000, // Cache for 30 seconds to avoid redundant fetches
+      cacheTime: 60000,
+    }
+  });
   const deleteThread = useApiDeleteThreadApiThreadThreadIdDelete();
 
   const handleNewThread = () => {

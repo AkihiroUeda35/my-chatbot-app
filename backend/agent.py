@@ -110,6 +110,9 @@ def create_model(model_name: str = DEFAULT_MODEL):
 # Singleton to hold the checkpointer instance
 _checkpointer = None
 
+# Singleton to hold the agent instance
+_agent = None
+
 
 def get_checkpointer():
     """Get the SQLite checkpointer (lazy initialization).
@@ -136,17 +139,29 @@ def get_search_agent(checkpointer=None):
     Returns:
         A compiled LangGraph agent.
     """
+    global _agent
+
+    # Return cached agent if no custom checkpointer is provided
+    if checkpointer is None and _agent is not None:
+        return _agent
+
     if checkpointer is None:
         checkpointer = get_checkpointer()
 
     model = create_model(DEFAULT_MODEL)
 
-    return create_deep_agent(
+    agent = create_deep_agent(
         model=model,
         tools=[internet_search],
         system_prompt=SEARCH_AGENT_PROMPT,
         checkpointer=checkpointer,
     )
+
+    # Cache the agent if using default checkpointer
+    if checkpointer == get_checkpointer():
+        _agent = agent
+
+    return agent
 
 
 async def search(
